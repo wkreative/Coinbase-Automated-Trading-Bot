@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <footer className="border-t border-slate-800/80 bg-slate-950/60 py-4 px-4 text-center text-xs text-slate-500">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>
-              © 2026 Coinbase Automated Trading Bot. Built with Next.js, Supabase Edge Functions & Deno.
+              © 2026 Coinbase Automated Trading Bot.
             </p>
             <p className="font-semibold text-amber-500/80">
               ⚠️ Financial Risk Disclaimer: Automated trading involves financial risk. Past or simulated performance does not guarantee future results.

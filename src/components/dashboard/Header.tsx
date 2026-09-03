@@ -220,9 +220,9 @@ export function Header({
               </button>
 
               <Link
-                href="/login"
+                href="/dashboard/settings"
                 className="p-2 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all text-xs font-semibold flex items-center gap-1"
-                title="Account Settings & Login"
+                title="Account Settings"
               >
                 <User className="w-4 h-4" />
               </Link>
@@ -329,15 +329,15 @@ export function Header({
           </Link>
 
           <Link
-            href="/login"
+            href="/dashboard/settings"
             onClick={() => setMobileMenuOpen(false)}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              pathname === "/login"
+              pathname === "/dashboard/settings"
                 ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
                 : "text-slate-300 hover:bg-slate-800/60"
             }`}
           >
-            <User className="w-4 h-4" /> Sign In / Account
+            <User className="w-4 h-4" /> Account & Settings
           </Link>
         </nav>
 

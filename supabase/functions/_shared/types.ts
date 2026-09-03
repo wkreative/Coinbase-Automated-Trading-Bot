@@ -1,7 +1,8 @@
-export type TradingMode = "PAPER" | "LIVE";
+export type TradingMode = "DRY_RUN" | "PAPER" | "LIVE";
 
 export type BotStatus =
   | "STOPPED"
+  | "STARTING"
   | "RUNNING"
   | "PAUSED"
   | "HALTED"
@@ -140,3 +141,53 @@ export interface Position {
   signalId?: string | null;
   clientOrderId?: string | null;
 }
+
+export interface BotRuntime {
+  id?: string;
+  userId: string;
+  enabled: boolean;
+  tradingMode: TradingMode;
+  status: BotStatus;
+  lastHeartbeat?: string | null;
+  lastCycle?: string | null;
+  currentError?: string | null;
+  startedAt?: string | null;
+  stoppedAt?: string | null;
+  strategyVersion: string;
+  consecutiveLosses: number;
+  pauseUntil?: string | null;
+}
+
+export interface ApiConnectionStatus {
+  coinbaseConnected: boolean;
+  marketDataConnected: boolean;
+  canView: boolean;
+  canTrade: boolean;
+  canWithdraw: boolean;
+  usdBalance: number;
+  latencyMs: number;
+  lastTestedAt?: string;
+}
+
+export type HealthStatusLevel = "GREEN" | "YELLOW" | "RED";
+
+export interface SystemHealthStatus {
+  overall: HealthStatusLevel;
+  coinbaseMarketData: HealthStatusLevel;
+  coinbasePrivateApi: HealthStatusLevel;
+  supabase: HealthStatusLevel;
+  botWorker: HealthStatusLevel;
+  lastHeartbeat: string | null;
+  marketDataAgeSeconds: number;
+  lastCandleTimestamp: string | null;
+  tradingMode: TradingMode;
+  apiPermissions: {
+    view: boolean;
+    trade: boolean;
+    withdraw: boolean;
+  };
+  openPositionsCount: number;
+  openOrdersCount: number;
+  lastSuccessfulCycle: string | null;
+}
+

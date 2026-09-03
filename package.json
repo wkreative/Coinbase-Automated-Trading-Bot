@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx tests/indicators.test.ts && npx tsx tests/strategy.test.ts && npx tsx tests/riskManager.test.ts"
+    "test": "npx tsx tests/indicators.test.ts && npx tsx tests/strategy.test.ts && npx tsx tests/riskManager.test.ts && npx tsx tests/executionAndPnl.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

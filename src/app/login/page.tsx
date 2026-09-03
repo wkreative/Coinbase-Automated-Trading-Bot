@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, Lock, Mail, ArrowRight, CheckCircle, ShieldCheck } from "lucide-react";
+import { Activity, Lock, Mail, ArrowRight, CheckCircle, ShieldCheck, AlertCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,31 +15,59 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
-    setTimeout(() => {
-      setLoading(false);
-      
-      // Save authenticated user in localStorage
-      const userSession = {
-        email,
-        fullName: fullName || email.split("@")[0],
-        authenticatedAt: new Date().toISOString(),
-      };
-      localStorage.setItem("cb_authenticated_user", JSON.stringify(userSession));
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            },
+          },
+        });
 
+        if (error) throw error;
+
+        setMessage({
+          type: "success",
+          text: data.session
+            ? "Account created successfully! Redirecting..."
+            : "Check your email for the confirmation link.",
+        });
+
+        if (data.session) {
+          setTimeout(() => router.push("/dashboard"), 1000);
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        setMessage({
+          type: "success",
+          text: "Authentication successful! Redirecting to Dashboard...",
+        });
+
+        setTimeout(() => router.push("/dashboard"), 1000);
+      }
+    } catch (err) {
+      const error = err as Error;
       setMessage({
-        type: "success",
-        text: isSignUp ? "Account created successfully! Redirecting to Dashboard..." : "Authentication successful! Redirecting...",
+        type: "error",
+        text: error.message || "Authentication failed. Please check your credentials.",
       });
-
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
-    }, 800);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,7 +97,11 @@ export default function LoginPage() {
                 : "bg-rose-500/10 border-rose-500/30 text-rose-400"
             }`}
           >
-            <CheckCircle className="w-4 h-4 shrink-0" />
+            {message.type === "success" ? (
+              <CheckCircle className="w-4 h-4 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0" />
+            )}
             {message.text}
           </div>
         )}
@@ -83,7 +117,7 @@ export default function LoginPage() {
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Jose Jimenez"
+                  placeholder="Trader Name"
                   className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white outline-none transition-all"
                 />
               </div>
@@ -99,7 +133,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="josejimenezmorales@hotmail.com"
+                placeholder="trader@example.com"
                 className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white outline-none transition-all"
               />
             </div>

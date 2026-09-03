@@ -8,8 +8,16 @@ export async function generateCoinbaseAuthHeader(
   requestPath: string,
   body = ""
 ): Promise<Record<string, string>> {
-  const apiKey = Deno.env.get("COINBASE_API_KEY") || "";
-  const apiSecret = Deno.env.get("COINBASE_API_SECRET") || "";
+  const getEnv = (key: string) => {
+    if (typeof process !== "undefined" && process.env) {
+      return process.env[key] || "";
+    }
+    // @ts-ignore Deno global in Deno Edge Functions
+    return typeof Deno !== "undefined" ? Deno.env.get(key) || "" : "";
+  };
+
+  const apiKey = getEnv("COINBASE_API_KEY");
+  const apiSecret = getEnv("COINBASE_API_SECRET");
 
   if (!apiKey || !apiSecret) {
     return {};

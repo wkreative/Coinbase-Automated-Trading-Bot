@@ -312,31 +312,44 @@ export function useTradingBotStore() {
     });
   };
 
-  // Execute Simulated Scan
-  const runMarketScan = () => {
-    if (state.status !== "RUNNING") return;
+  // Execute Real Coinbase Market Scan
+  const runMarketScan = async () => {
+    try {
+      addLog("INFO", "MARKET_SCAN", "Fetching real Coinbase market data for BTC-USD, ETH-USD, SOL-USD...");
 
-    addLog("INFO", "MARKET_SCAN", "Scanning markets BTC-USD, ETH-USD, SOL-USD...");
+      const res = await fetch("/api/trading/market-data");
+      if (!res.ok) {
+        addLog("ERROR", "MARKET_DATA", "Failed to fetch real market data feed from Coinbase API.");
+        return;
+      }
 
-    // Update prices & tickers
-    setMarketAssets((prevAssets) =>
-      prevAssets.map((asset) => {
-        const delta = (Math.random() - 0.47) * asset.price * 0.004;
-        const newPrice = Number((asset.price + delta).toFixed(2));
-        const newRsi = Number(Math.max(25, Math.min(75, asset.rsi + (Math.random() - 0.5) * 2)).toFixed(1));
-        const newPb = Number((-1.5 - Math.random() * 2.5).toFixed(1));
-        const score = Math.floor(60 + Math.random() * 35);
+      const data = await res.json();
+      if (!data.isFeedHealthy) {
+        addLog("WARNING", "MARKET_DATA", `Market feed unhealthy! Data age is ${data.maxDataAgeSeconds}s (max allowed 15s).`);
+      }
 
-        return {
-          ...asset,
-          price: newPrice,
-          rsi: newRsi,
-          pullbackPercent: newPb,
-          score,
-          status: positions.some((p) => p.symbol === asset.symbol) ? "POSITION OPEN" : score >= 75 ? "READY" : "WAIT",
-        };
-      })
-    );
+      if (Array.isArray(data.assets)) {
+        setMarketAssets(
+          data.assets.map((asset: { symbol: TradingSymbol; price: number; ema20: number; ema50: number; rsi: number; pullbackPercent: number; score: number; shouldTrade: boolean }) => ({
+            symbol: asset.symbol,
+            price: asset.price,
+            ema20: asset.ema20,
+            ema50: asset.ema50,
+            rsi: asset.rsi,
+            pullbackPercent: asset.pullbackPercent,
+            score: asset.score,
+            status: positions.some((p) => p.symbol === asset.symbol)
+              ? "POSITION OPEN"
+              : asset.shouldTrade
+              ? "READY"
+              : "WAIT",
+          }))
+        );
+      }
+    } catch (err) {
+      const error = err as Error;
+      addLog("ERROR", "MARKET_DATA", `Market scan error: ${error.message}`);
+    }
 
     // Check TP/SL for open positions
     positions.forEach((pos) => {

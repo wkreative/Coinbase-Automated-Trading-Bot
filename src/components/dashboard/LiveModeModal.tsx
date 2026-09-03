@@ -17,8 +17,8 @@ export function LiveModeModal({ isOpen, onClose, onConfirmLiveMode }: LiveModeMo
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    if (typedPhrase !== "ENABLE LIVE TRADING") {
-      setErrorMsg("Confirmation phrase does not match. Please type exactly 'ENABLE LIVE TRADING'.");
+    if (typedPhrase !== "TYPE ENABLE LIVE TRADING") {
+      setErrorMsg("Confirmation phrase does not match. Please type exactly 'TYPE ENABLE LIVE TRADING'.");
       return;
     }
 
@@ -78,7 +78,7 @@ export function LiveModeModal({ isOpen, onClose, onConfirmLiveMode }: LiveModeMo
         <div className="space-y-4 text-xs mb-6">
           <div>
             <label className="block text-slate-300 font-semibold mb-1.5">
-              Type <span className="text-red-400 select-all font-mono font-bold">ENABLE LIVE TRADING</span> to confirm:
+              Type <span className="text-red-400 select-all font-mono font-bold">TYPE ENABLE LIVE TRADING</span> to confirm:
             </label>
             <input
               type="text"
@@ -87,7 +87,7 @@ export function LiveModeModal({ isOpen, onClose, onConfirmLiveMode }: LiveModeMo
                 setTypedPhrase(e.target.value);
                 setErrorMsg("");
               }}
-              placeholder="ENABLE LIVE TRADING"
+              placeholder="TYPE ENABLE LIVE TRADING"
               className="w-full bg-slate-950 border border-slate-800 focus:border-red-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none"
             />
           </div>

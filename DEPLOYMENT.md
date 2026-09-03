@@ -1,80 +1,44 @@
-# 🚀 Production Deployment Guide
+# 🚀 Deployment Guide (Vercel & Supabase)
 
-Follow these exact steps to deploy the Coinbase Automated Trading Bot to **Supabase** and **Vercel**.
+## 1. Environment Configuration
 
----
+Copy `.env.example` to environment variable settings in Vercel and Supabase:
 
-## 1. Supabase Setup & Database Push
+```ini
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+COINBASE_API_KEY=organizations/org-id/apiKeys/key-id
+COINBASE_API_SECRET="-----BEGIN EC PRIVATE KEY-----\n...\n-----END EC PRIVATE KEY-----"
+TRADING_MODE=PAPER
+LIVE_TRADING_ENABLED=false
+```
 
-1. **Login to Supabase CLI**:
-   ```bash
-   npx supabase login
-   ```
+## 2. Supabase Migration Execution
 
-2. **Link your Supabase Project**:
-   ```bash
-   npx supabase link --project-ref <your-supabase-project-ref>
-   ```
+Run database migrations against your Supabase PostgreSQL instance:
 
-3. **Push Database Schema & Migrations**:
-   ```bash
-   npx supabase db push
-   ```
+```bash
+npx supabase db push
+```
 
----
+Or apply `migrations/20260903000000_initial_schema.sql` and `migrations/20260903000002_audit_schema_update.sql` via Supabase SQL Editor.
 
-## 2. Deploy Supabase Edge Functions & Secrets
+## 3. Deploying 24/7 Worker Edge Function
 
-1. **Set Edge Function Environment Secrets**:
-   ```bash
-   npx supabase secrets set COINBASE_API_KEY="your-coinbase-api-key"
-   npx supabase secrets set COINBASE_API_SECRET="your-coinbase-private-key-pem"
-   npx supabase secrets set TRADING_MODE="PAPER"
-   npx supabase secrets set LIVE_TRADING_ENABLED="false"
-   npx supabase secrets set BOT_CRON_SECRET="your-secure-cron-secret-key"
-   ```
+Deploy the background worker to Supabase Edge Functions:
 
-2. **Deploy Edge Functions**:
-   ```bash
-   npx supabase functions deploy trading-engine
-   npx supabase functions deploy bot-control
-   npx supabase functions deploy emergency-stop
-   ```
+```bash
+npx supabase functions deploy trading-engine
+```
 
-3. **Configure Supabase Cron (`pg_cron`)**:
-   Execute the following SQL in your Supabase SQL Editor to trigger `trading-engine` every 5 minutes:
+Schedule cron triggers or ping the edge function every 5 minutes using Supabase `pg_cron` or an external uptime monitor.
 
-   ```sql
-   SELECT cron.schedule(
-     'trading-engine-5m',
-     '*/5 * * * *',
-     $$
-     SELECT net.http_post(
-       url:='https://<your-project-ref>.supabase.co/functions/v1/trading-engine',
-       headers:='{"Content-Type": "application/json", "Authorization": "Bearer your-secure-cron-secret-key"}'::jsonb,
-       body:='{}'::jsonb
-     ) as request_id;
-     $$
-   );
-   ```
+## 4. Vercel Deployment
 
----
+Push repository to GitHub / Vercel:
 
-## 3. Vercel Frontend Deployment
+```bash
+git push origin main
+```
 
-1. **Deploy via Vercel CLI**:
-   ```bash
-   npx vercel
-   ```
-
-2. **Add Environment Variables in Vercel Project Settings**:
-   * `NEXT_PUBLIC_SUPABASE_URL`
-   * `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   * `SUPABASE_SERVICE_ROLE_KEY`
-   * `TRADING_MODE` = `PAPER`
-   * `LIVE_TRADING_ENABLED` = `false`
-
-3. **Deploy to Production**:
-   ```bash
-   npx vercel --prod
-   ```
+Vercel automatically builds and deploys the Next.js application.

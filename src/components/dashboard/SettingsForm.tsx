@@ -40,26 +40,43 @@ export function SettingsForm({ settings, onSaveSettings }: SettingsFormProps) {
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // Connection Test Handler
-  const handleTestConnection = () => {
+  const handleTestConnection = async () => {
     setTestingConnection(true);
     setTestResult(null);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/coinbase/test");
+      const data = await res.json();
+
       setTestingConnection(false);
-      if (apiKey.trim().length < 5 || apiSecret.trim().length < 5) {
+
+      if (!res.ok || data.error) {
         setTestResult({
           success: false,
-          message: "API Key or Secret is missing or invalid. Please provide valid Coinbase credentials.",
+          message: data.error || "Coinbase API Connection Test Failed",
         });
       } else {
         setTestResult({
-          success: true,
-          message: "Coinbase API Connected Successfully! Balance: $1,000.00 USD available.",
-          permissions: { view: true, trade: true, transfer: false },
-          latencyMs: 142,
+          success: data.coinbaseConnected || data.marketDataConnected,
+          message: data.coinbaseConnected
+            ? `Coinbase API Connected! Balance: $${data.usdBalance.toFixed(2)} USD`
+            : "Coinbase Market Data Feed Connected! (Private API credentials not configured)",
+          permissions: {
+            view: data.canView,
+            trade: data.canTrade,
+            transfer: data.canWithdraw,
+          },
+          latencyMs: data.latencyMs,
         });
       }
-    }, 1200);
+    } catch (err) {
+      const error = err as Error;
+      setTestingConnection(false);
+      setTestResult({
+        success: false,
+        message: error.message || "Failed to reach Coinbase API endpoint",
+      });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
