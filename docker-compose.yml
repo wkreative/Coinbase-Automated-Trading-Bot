@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  coinbase-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coinbase_bot_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - TRADING_MODE=PAPER
+      - LIVE_TRADING_ENABLED=false
