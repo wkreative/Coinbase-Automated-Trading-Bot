@@ -6,7 +6,6 @@ import {
   BotState,
   Position,
   TradingSymbol,
-  BotStatus,
   TradingMode,
 } from "../types";
 
@@ -93,6 +92,16 @@ const DEFAULT_STATE: BotState = {
   lastRunAt: null,
 };
 
+// Storage keys
+const STORAGE_KEYS = {
+  SETTINGS: "cb_bot_settings",
+  STATE: "cb_bot_state",
+  POSITIONS: "cb_bot_positions",
+  CLOSED_TRADES: "cb_bot_closed_trades",
+  SIGNALS: "cb_bot_signals",
+  LOGS: "cb_bot_logs",
+};
+
 export function useTradingBotStore() {
   const [settings, setSettings] = useState<BotSettings>(DEFAULT_SETTINGS);
   const [state, setState] = useState<BotState>(DEFAULT_STATE);
@@ -108,6 +117,7 @@ export function useTradingBotStore() {
       timestamp: new Date().toISOString(),
     },
   ]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const [marketAssets, setMarketAssets] = useState<MarketAssetMetric[]>([
     {
@@ -141,6 +151,48 @@ export function useTradingBotStore() {
       status: "WAIT",
     },
   ]);
+
+  // Load state from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (savedSettings) setSettings(JSON.parse(savedSettings));
+
+      const savedState = localStorage.getItem(STORAGE_KEYS.STATE);
+      if (savedState) setState(JSON.parse(savedState));
+
+      const savedPositions = localStorage.getItem(STORAGE_KEYS.POSITIONS);
+      if (savedPositions) setPositions(JSON.parse(savedPositions));
+
+      const savedClosed = localStorage.getItem(STORAGE_KEYS.CLOSED_TRADES);
+      if (savedClosed) setClosedTrades(JSON.parse(savedClosed));
+
+      const savedSignals = localStorage.getItem(STORAGE_KEYS.SIGNALS);
+      if (savedSignals) setSignals(JSON.parse(savedSignals));
+
+      const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
+      if (savedLogs) setLogs(JSON.parse(savedLogs));
+    } catch (e) {
+      console.error("Error loading state from localStorage:", e);
+    } finally {
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(positions));
+      localStorage.setItem(STORAGE_KEYS.CLOSED_TRADES, JSON.stringify(closedTrades));
+      localStorage.setItem(STORAGE_KEYS.SIGNALS, JSON.stringify(signals));
+      localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs.slice(0, 100)));
+    } catch (e) {
+      console.error("Error saving state to localStorage:", e);
+    }
+  }, [settings, state, positions, closedTrades, signals, logs, isLoaded]);
 
   // Add Log Helper
   const addLog = (level: LogEntry["level"], category: string, message: string, metadata?: Record<string, unknown>) => {
@@ -373,12 +425,12 @@ export function useTradingBotStore() {
 
   // Real-time market tick loop simulation when bot is RUNNING
   useEffect(() => {
-    if (state.status !== "RUNNING") return;
+    if (!isLoaded || state.status !== "RUNNING") return;
     const interval = setInterval(() => {
       runMarketScan();
     }, 6000);
     return () => clearInterval(interval);
-  }, [state.status, positions, marketAssets, settings]);
+  }, [state.status, positions, marketAssets, settings, isLoaded]);
 
   return {
     settings,
@@ -390,6 +442,7 @@ export function useTradingBotStore() {
     signals,
     logs,
     marketAssets,
+    isLoaded,
     startBot,
     pauseBot,
     stopBot,

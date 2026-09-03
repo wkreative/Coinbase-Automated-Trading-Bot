@@ -186,8 +186,16 @@ export function Header({
               onClick={onEmergencyStop}
               className="px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white font-bold text-xs flex items-center gap-1.5 border border-red-500/30 transition-all cursor-pointer"
             >
-              <ShieldAlert className="w-3.5 h-3.5" /> Stop
+              <ShieldAlert className="w-3.5 h-3.5" /> Emergency
             </button>
+
+            <Link
+              href="/login"
+              className="p-2 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all text-xs font-semibold flex items-center gap-1.5 ml-1"
+              title="User Profile & Login"
+            >
+              <span className="w-2 h-2 rounded-full bg-blue-400"></span> Account
+            </Link>
           </div>
 
         </div>
