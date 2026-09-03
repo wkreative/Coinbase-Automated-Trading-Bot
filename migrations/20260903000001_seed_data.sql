@@ -6,6 +6,23 @@ DO $$
 DECLARE
   default_user_id UUID := '00000000-0000-0000-0000-000000000001';
 BEGIN
+  -- Insert into auth.users first to satisfy foreign key constraint
+  INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, role, aud)
+  VALUES (
+    default_user_id,
+    '00000000-0000-0000-0000-000000000001',
+    'trader@coinbasebot.local',
+    '$2a$10$dummyencryptedpasswordforlocalbot1234567890',
+    NOW(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Quant Trader"}'::jsonb,
+    NOW(),
+    NOW(),
+    'authenticated',
+    'authenticated'
+  )
+  ON CONFLICT (id) DO NOTHING;
+
   -- Insert into profiles
   INSERT INTO public.profiles (id, email, full_name)
   VALUES (default_user_id, 'trader@coinbasebot.local', 'Quant Trader')
