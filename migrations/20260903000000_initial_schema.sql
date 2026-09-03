@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS public.daily_stats (
   starting_balance NUMERIC(12, 2) DEFAULT 1000.00,
   ending_balance NUMERIC(12, 2) DEFAULT 1000.00,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT unique_user_daily DATE UNIQUE(user_id, date)
+  CONSTRAINT unique_user_daily UNIQUE(user_id, date)
 );
 
 -- 8. Weekly Stats Table
