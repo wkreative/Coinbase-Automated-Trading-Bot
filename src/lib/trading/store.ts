@@ -152,7 +152,97 @@ export function useTradingBotStore() {
     },
   ]);
 
-  // Load state from localStorage on mount
+  const [isSyncedWithDb, setIsSyncedWithDb] = useState(false);
+
+  // Sync state with server/database
+  const syncWithServer = async () => {
+    try {
+      const res = await fetch("/api/trading/sync");
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.isConfigured) {
+        setIsSyncedWithDb(true);
+        if (data.settings) setSettings(data.settings);
+        if (data.state) {
+          setState({
+            userId: data.state.user_id || DEFAULT_STATE.userId,
+            status: data.state.status || "STOPPED",
+            currentBalance: Number(data.state.current_balance) || 1000,
+            availableBalance: Number(data.state.available_balance) || 600,
+            reservedBalance: Number(data.state.reserved_balance) || 400,
+            totalExposure: Number(data.state.total_exposure) || 0,
+            peakBalance: Number(data.state.peak_balance) || 1000,
+            currentDrawdownPercent: Number(data.state.current_drawdown_percent) || 0,
+            lastRunAt: data.state.last_run_at,
+          });
+        }
+        if (Array.isArray(data.closedTrades) && data.closedTrades.length > 0) {
+          setClosedTrades(
+            data.closedTrades.map((t: Record<string, unknown>) => ({
+              id: String(t.id),
+              userId: String(t.user_id || DEFAULT_SETTINGS.userId),
+              symbol: t.symbol as TradingSymbol,
+              mode: t.mode as TradingMode,
+              side: (t.side as "BUY" | "SELL") || "BUY",
+              status: "CLOSED",
+              entryPrice: Number(t.entry_price),
+              quantity: Number(t.quantity),
+              quoteAmount: Number(t.quote_amount),
+              takeProfitPrice: Number(t.take_profit_price),
+              stopLossPrice: Number(t.stop_loss_price),
+              entryFee: Number(t.entry_fee || 0),
+              exitFee: Number(t.exit_fee || 0),
+              slippage: Number(t.slippage || 0),
+              openedAt: String(t.opened_at),
+              closedAt: String(t.closed_at),
+              exitPrice: Number(t.exit_price),
+              exitReason: t.exit_reason as Position["exitReason"],
+              grossPnl: Number(t.gross_pnl || 0),
+              netPnl: Number(t.net_pnl || 0),
+              pnlPercent: Number(t.pnl_percent || 0),
+            }))
+          );
+        }
+        if (Array.isArray(data.openPositions)) {
+          setPositions(
+            data.openPositions.map((t: Record<string, unknown>) => ({
+              id: String(t.id),
+              userId: String(t.user_id || DEFAULT_SETTINGS.userId),
+              symbol: t.symbol as TradingSymbol,
+              mode: t.mode as TradingMode,
+              side: (t.side as "BUY" | "SELL") || "BUY",
+              status: "OPEN",
+              entryPrice: Number(t.entry_price),
+              quantity: Number(t.quantity),
+              quoteAmount: Number(t.quote_amount),
+              takeProfitPrice: Number(t.take_profit_price),
+              stopLossPrice: Number(t.stop_loss_price),
+              entryFee: Number(t.entry_fee || 0),
+              exitFee: 0,
+              slippage: Number(t.slippage || 0),
+              openedAt: String(t.opened_at),
+            }))
+          );
+        }
+        if (Array.isArray(data.logs) && data.logs.length > 0) {
+          setLogs(
+            data.logs.map((l: Record<string, unknown>) => ({
+              id: String(l.id),
+              level: l.level as LogEntry["level"],
+              category: String(l.category),
+              message: String(l.message),
+              timestamp: String(l.created_at),
+            }))
+          );
+        }
+      }
+    } catch (e) {
+      console.error("Error syncing with server:", e);
+    }
+  };
+
+  // Load state from localStorage on mount & initial server sync
   useEffect(() => {
     try {
       const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -177,9 +267,19 @@ export function useTradingBotStore() {
     } finally {
       setIsLoaded(true);
     }
+
+    syncWithServer();
   }, []);
 
-  // Save state to localStorage whenever it changes
+  // Poll server for synced trades every 8 seconds
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      syncWithServer();
+    }, 8000);
+    return () => clearInterval(pollInterval);
+  }, []);
+
+  // Save state to localStorage & push to DB server
   useEffect(() => {
     if (!isLoaded) return;
     try {
@@ -189,8 +289,15 @@ export function useTradingBotStore() {
       localStorage.setItem(STORAGE_KEYS.CLOSED_TRADES, JSON.stringify(closedTrades));
       localStorage.setItem(STORAGE_KEYS.SIGNALS, JSON.stringify(signals));
       localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs.slice(0, 100)));
+
+      // Push to DB server if configured
+      fetch("/api/trading/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "SYNC_STATE", payload: { state, settings } }),
+      }).catch(() => {});
     } catch (e) {
-      console.error("Error saving state to localStorage:", e);
+      console.error("Error saving state:", e);
     }
   }, [settings, state, positions, closedTrades, signals, logs, isLoaded]);
 
@@ -456,6 +563,8 @@ export function useTradingBotStore() {
     logs,
     marketAssets,
     isLoaded,
+    isSyncedWithDb,
+    syncWithServer,
     startBot,
     pauseBot,
     stopBot,
